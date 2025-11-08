@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+import { API_BASE_URL } from '../config/apiConfig'
 
 export async function generateSlideshow({ files, durationSeconds = 2, slideEffect = true, transition = 'slide' }) {
   if (!files || files.length < 2 || files.length > 3) {

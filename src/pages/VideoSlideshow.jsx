@@ -1,6 +1,7 @@
  
 import React, { useState } from 'react'
 import { generateSlideshow } from '../api/video'
+import { API_BASE_URL } from '../config/apiConfig'
 
 export default function VideoSlideshow() {
   const [files, setFiles] = useState([])
@@ -26,7 +27,6 @@ export default function VideoSlideshow() {
       // Handle video URL for both local development and production
       let videoUrlToUse = res.video_url
       if (videoUrlToUse) {
-        const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
         const isLocalDev = API_BASE_URL.includes('localhost:8000')
         
         // If URL contains localhost:8000 and we're in local dev, use Vite proxy

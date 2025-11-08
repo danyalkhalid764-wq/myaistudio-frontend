@@ -10,6 +10,7 @@ import Dashboard from './pages/Dashboard'
 import Pricing from './pages/Pricing'
 import VideoSlideshow from './pages/VideoSlideshow'
 import ProtectedRoute from './components/ProtectedRoute'
+import ApiConfigDisplay from './components/ApiConfigDisplay'
 
 function App() {
   return (
@@ -33,6 +34,8 @@ function App() {
             />
           </Routes>
           <Toaster position="top-right" />
+          {/* Debug component - shows API configuration */}
+          {import.meta.env.DEV && <ApiConfigDisplay />}
         </div>
       </Router>
     </AuthProvider>

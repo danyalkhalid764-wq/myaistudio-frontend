@@ -1,15 +1,5 @@
 import axios from 'axios'
-
-// ✅ Use localhost for local development, Railway URL for production
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL ||
-  'http://localhost:8000'
-
-// Debug: Log API URL in production to help diagnose issues
-if (import.meta.env.PROD) {
-  console.log('🔗 API Base URL:', API_BASE_URL)
-  console.log('🔗 VITE_API_URL env var:', import.meta.env.VITE_API_URL)
-}
+import { API_BASE_URL } from '../config/apiConfig'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
