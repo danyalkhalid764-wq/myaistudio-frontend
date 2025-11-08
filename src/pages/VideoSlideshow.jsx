@@ -14,7 +14,7 @@ export default function VideoSlideshow() {
 
   const handleFiles = (e) => {
     const f = Array.from(e.target.files || [])
-    setFiles(f.slice(0, 3))
+    setFiles(f.slice(0, 4))  // Allow up to 4 images
   }
 
   const onSubmit = async (e) => {
