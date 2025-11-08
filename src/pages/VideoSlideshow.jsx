@@ -134,12 +134,52 @@ export default function VideoSlideshow() {
             controls 
             className="w-full rounded shadow"
             preload="metadata"
+            crossOrigin="anonymous"
             onError={(e) => {
-              console.error('Video playback error:', e)
-              setError('Failed to load video. Please try again.')
+              const video = e.target
+              const error = video.error
+              console.error('Video playback error:', {
+                code: error?.code,
+                message: error?.message,
+                videoUrl: videoUrl
+              })
+              
+              // Provide specific error messages based on error code
+              let errorMsg = 'Failed to load video. '
+              if (error) {
+                switch (error.code) {
+                  case 1: // MEDIA_ERR_ABORTED
+                    errorMsg += 'Video loading was aborted.'
+                    break
+                  case 2: // MEDIA_ERR_NETWORK
+                    errorMsg += 'Network error. Please check your connection.'
+                    break
+                  case 3: // MEDIA_ERR_DECODE
+                    errorMsg += 'Video format error. The video may be corrupted.'
+                    break
+                  case 4: // MEDIA_ERR_SRC_NOT_SUPPORTED
+                    errorMsg += 'Video format not supported or video not found.'
+                    break
+                  default:
+                    errorMsg += 'Please try generating a new video.'
+                }
+              } else {
+                errorMsg += 'Please try generating a new video.'
+              }
+              
+              setError(errorMsg)
             }}
-            onLoadStart={() => console.log('Video loading started:', videoUrl)}
-            onCanPlay={() => console.log('Video can play:', videoUrl)}
+            onLoadStart={() => {
+              console.log('Video loading started:', videoUrl)
+              setError('') // Clear any previous errors
+            }}
+            onCanPlay={() => {
+              console.log('Video can play:', videoUrl)
+              setError('') // Clear any errors when video can play
+            }}
+            onLoadedMetadata={() => {
+              console.log('Video metadata loaded:', videoUrl)
+            }}
           />
           <div className="mt-2">
             <a href={videoUrl} download className="text-blue-600 underline">Download video</a>
