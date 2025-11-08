@@ -9,7 +9,6 @@ export default function VideoSlideshow() {
   const [slideEffect, setSlideEffect] = useState(true)
   const [transition, setTransition] = useState('slide')
   const [videoUrl, setVideoUrl] = useState('')
-  const [fallbackUrl, setFallbackUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -22,26 +21,18 @@ export default function VideoSlideshow() {
     e.preventDefault()
     setError('')
     setVideoUrl('')
-    setFallbackUrl('')
     try {
       setLoading(true)
       const res = await generateSlideshow({ files, durationSeconds: duration, slideEffect, transition })
       
-      // Handle video URL - prefer streaming, fallback to static
-      let videoUrlToUse = res.video_url || res.static_url
-      const fallbackUrl = res.static_url || res.video_url
+      // SIMPLE: Just use the video_url from response
+      let videoUrlToUse = res.video_url
       
       if (videoUrlToUse) {
         const isLocalDev = API_BASE_URL.includes('localhost:8000')
         
-        // If URL contains localhost:8000 and we're in local dev, use Vite proxy
-        if (videoUrlToUse.includes('localhost:8000') && isLocalDev) {
-          videoUrlToUse = videoUrlToUse.replace('localhost:8000', 'localhost:3000')
-        }
-        // If it's a relative URL starting with /api/video/stream or /static
-        else if (videoUrlToUse.startsWith('/api/video/stream') || videoUrlToUse.startsWith('/static')) {
-          // In local dev, Vite proxy will handle it
-          // In production, prepend the backend URL
+        // If it's a relative URL, prepend backend URL in production
+        if (videoUrlToUse.startsWith('/static')) {
           if (!isLocalDev) {
             videoUrlToUse = `${API_BASE_URL}${videoUrlToUse}`
           }
@@ -50,33 +41,10 @@ export default function VideoSlideshow() {
         else if (!videoUrlToUse.startsWith('http://') && !videoUrlToUse.startsWith('https://')) {
           videoUrlToUse = `${API_BASE_URL}${videoUrlToUse}`
         }
-        // If it's a full production URL, use it directly
       }
       
-      // Also prepare fallback URL
-      let fallbackUrlToUse = null
-      if (fallbackUrl && fallbackUrl !== videoUrlToUse) {
-        if (fallbackUrl.startsWith('/')) {
-          if (!isLocalDev) {
-            fallbackUrlToUse = `${API_BASE_URL}${fallbackUrl}`
-          } else {
-            fallbackUrlToUse = fallbackUrl
-          }
-        } else {
-          fallbackUrlToUse = fallbackUrl
-        }
-      }
-      
-      // Cache-bust and ensure the <video> reloads with new source
+      // Set video URL
       setVideoUrl(`${videoUrlToUse}?t=${Date.now()}`)
-      
-      // Store fallback URL for error handling
-      if (fallbackUrlToUse) {
-        setFallbackUrl(fallbackUrlToUse)
-        console.log('Fallback video URL available:', fallbackUrlToUse)
-      } else {
-        setFallbackUrl('')
-      }
     } catch (err) {
       setError(err.message || 'Something went wrong')
     } finally {
@@ -89,7 +57,7 @@ export default function VideoSlideshow() {
       <h1 className="text-2xl font-semibold mb-4">Create Slideshow</h1>
       <form onSubmit={onSubmit} className="space-y-5 bg-white p-6 rounded-xl shadow-lg border border-gray-100">
         <div>
-          <label className="block font-semibold mb-2 text-gray-800">Upload 2–3 images</label>
+          <label className="block font-semibold mb-2 text-gray-800">Upload 2–4 images</label>
           <input
             type="file"
             accept="image/*"
@@ -166,45 +134,8 @@ export default function VideoSlideshow() {
             onError={(e) => {
               const video = e.target
               const error = video.error
-              console.error('Video playback error:', {
-                code: error?.code,
-                message: error?.message,
-                videoUrl: videoUrl,
-                fallbackUrl: fallbackUrl
-              })
-              
-              // Try fallback URL if available
-              if (fallbackUrl && video.src !== fallbackUrl) {
-                console.log('Trying fallback URL:', fallbackUrl)
-                video.src = `${fallbackUrl}?t=${Date.now()}`
-                video.load()
-                return
-              }
-              
-              // Provide specific error messages based on error code
-              let errorMsg = 'Failed to load video. '
-              if (error) {
-                switch (error.code) {
-                  case 1: // MEDIA_ERR_ABORTED
-                    errorMsg += 'Video loading was aborted.'
-                    break
-                  case 2: // MEDIA_ERR_NETWORK
-                    errorMsg += 'Network error. Please check your connection.'
-                    break
-                  case 3: // MEDIA_ERR_DECODE
-                    errorMsg += 'Video format error. The video may be corrupted.'
-                    break
-                  case 4: // MEDIA_ERR_SRC_NOT_SUPPORTED
-                    errorMsg += 'Video format not supported or video not found. Please try generating a new video.'
-                    break
-                  default:
-                    errorMsg += 'Please try generating a new video.'
-                }
-              } else {
-                errorMsg += 'Please try generating a new video.'
-              }
-              
-              setError(errorMsg)
+              console.error('Video error:', error?.code, error?.message)
+              setError('Failed to load video. Please try generating again.')
             }}
             onLoadStart={() => {
               console.log('Video loading started:', videoUrl)

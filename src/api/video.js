@@ -28,8 +28,8 @@ import { API_BASE_URL } from '../config/apiConfig'
  * ```
  */
 export async function generateSlideshow({ files, durationSeconds = 2, slideEffect = true, transition = 'slide' }) {
-  if (!files || files.length < 2 || files.length > 3) {
-    throw new Error('Please select 2 to 3 images.')
+  if (!files || files.length < 2 || files.length > 4) {
+    throw new Error('Please select 2 to 4 images.')
   }
 
   // Get token from localStorage - required for authentication
