@@ -9,6 +9,7 @@ export default function VideoSlideshow() {
   const [slideEffect, setSlideEffect] = useState(true)
   const [transition, setTransition] = useState('slide')
   const [videoUrl, setVideoUrl] = useState('')
+  const [fallbackUrl, setFallbackUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -21,11 +22,15 @@ export default function VideoSlideshow() {
     e.preventDefault()
     setError('')
     setVideoUrl('')
+    setFallbackUrl('')
     try {
       setLoading(true)
       const res = await generateSlideshow({ files, durationSeconds: duration, slideEffect, transition })
-      // Handle video URL for both local development and production
-      let videoUrlToUse = res.video_url
+      
+      // Handle video URL - prefer streaming, fallback to static
+      let videoUrlToUse = res.video_url || res.static_url
+      const fallbackUrl = res.static_url || res.video_url
+      
       if (videoUrlToUse) {
         const isLocalDev = API_BASE_URL.includes('localhost:8000')
         
@@ -47,8 +52,31 @@ export default function VideoSlideshow() {
         }
         // If it's a full production URL, use it directly
       }
+      
+      // Also prepare fallback URL
+      let fallbackUrlToUse = null
+      if (fallbackUrl && fallbackUrl !== videoUrlToUse) {
+        if (fallbackUrl.startsWith('/')) {
+          if (!isLocalDev) {
+            fallbackUrlToUse = `${API_BASE_URL}${fallbackUrl}`
+          } else {
+            fallbackUrlToUse = fallbackUrl
+          }
+        } else {
+          fallbackUrlToUse = fallbackUrl
+        }
+      }
+      
       // Cache-bust and ensure the <video> reloads with new source
       setVideoUrl(`${videoUrlToUse}?t=${Date.now()}`)
+      
+      // Store fallback URL for error handling
+      if (fallbackUrlToUse) {
+        setFallbackUrl(fallbackUrlToUse)
+        console.log('Fallback video URL available:', fallbackUrlToUse)
+      } else {
+        setFallbackUrl('')
+      }
     } catch (err) {
       setError(err.message || 'Something went wrong')
     } finally {
@@ -141,8 +169,17 @@ export default function VideoSlideshow() {
               console.error('Video playback error:', {
                 code: error?.code,
                 message: error?.message,
-                videoUrl: videoUrl
+                videoUrl: videoUrl,
+                fallbackUrl: fallbackUrl
               })
+              
+              // Try fallback URL if available
+              if (fallbackUrl && video.src !== fallbackUrl) {
+                console.log('Trying fallback URL:', fallbackUrl)
+                video.src = `${fallbackUrl}?t=${Date.now()}`
+                video.load()
+                return
+              }
               
               // Provide specific error messages based on error code
               let errorMsg = 'Failed to load video. '
@@ -158,7 +195,7 @@ export default function VideoSlideshow() {
                     errorMsg += 'Video format error. The video may be corrupted.'
                     break
                   case 4: // MEDIA_ERR_SRC_NOT_SUPPORTED
-                    errorMsg += 'Video format not supported or video not found.'
+                    errorMsg += 'Video format not supported or video not found. Please try generating a new video.'
                     break
                   default:
                     errorMsg += 'Please try generating a new video.'
