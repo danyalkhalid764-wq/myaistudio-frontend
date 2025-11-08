@@ -33,8 +33,8 @@ export default function VideoSlideshow() {
         if (videoUrlToUse.includes('localhost:8000') && isLocalDev) {
           videoUrlToUse = videoUrlToUse.replace('localhost:8000', 'localhost:3000')
         }
-        // If it's a relative URL starting with /static
-        else if (videoUrlToUse.startsWith('/static')) {
+        // If it's a relative URL starting with /api/video/stream or /static
+        else if (videoUrlToUse.startsWith('/api/video/stream') || videoUrlToUse.startsWith('/static')) {
           // In local dev, Vite proxy will handle it
           // In production, prepend the backend URL
           if (!isLocalDev) {
@@ -128,7 +128,19 @@ export default function VideoSlideshow() {
       {videoUrl && (
         <div className="mt-6">
           <h2 className="text-xl font-semibold mb-2">Your Video</h2>
-          <video key={videoUrl} src={videoUrl} controls className="w-full rounded shadow" />
+          <video 
+            key={videoUrl} 
+            src={videoUrl} 
+            controls 
+            className="w-full rounded shadow"
+            preload="metadata"
+            onError={(e) => {
+              console.error('Video playback error:', e)
+              setError('Failed to load video. Please try again.')
+            }}
+            onLoadStart={() => console.log('Video loading started:', videoUrl)}
+            onCanPlay={() => console.log('Video can play:', videoUrl)}
+          />
           <div className="mt-2">
             <a href={videoUrl} download className="text-blue-600 underline">Download video</a>
           </div>
