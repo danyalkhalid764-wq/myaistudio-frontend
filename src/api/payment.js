@@ -34,6 +34,14 @@ export const paymentAPI = {
     })
     return response.data
   },
+
+  createSubscriptionRequest: async (transactionId, amount) => {
+    const response = await api.post('/api/payment/subscription-request', {
+      transaction_id: transactionId,
+      amount: amount
+    })
+    return response.data
+  },
 }
 
 

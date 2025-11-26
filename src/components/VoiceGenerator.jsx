@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react'
-import { Play, Pause, Download, Loader } from 'lucide-react'
+import { Play, Pause, Download, Loader, AlertCircle, X } from 'lucide-react'
 import { ttsAPI } from '../api/tts'
 import toast from 'react-hot-toast'
 
@@ -9,6 +9,7 @@ const VoiceGenerator = ({ user, onGenerationComplete }) => {
   const [isPlaying, setIsPlaying] = useState(false)
   const [audioData, setAudioData] = useState(null)
   const [audioUrl, setAudioUrl] = useState(null)
+  const [error, setError] = useState(null)
   const audioRef = useRef(null)
 
   const handleGenerate = async () => {
@@ -18,6 +19,8 @@ const VoiceGenerator = ({ user, onGenerationComplete }) => {
     }
 
     setIsGenerating(true)
+    setError(null) // Clear previous errors
+    
     try {
       const response = await ttsAPI.generateVoice(text)
       
@@ -38,11 +41,45 @@ const VoiceGenerator = ({ user, onGenerationComplete }) => {
         onGenerationComplete?.()
         toast.success('Voice generated successfully!')
       } else {
-        toast.error(response.message || 'Failed to generate voice')
+        // Handle error response
+        if (response.error) {
+          setError(response.error)
+          toast.error(response.message || 'Failed to generate voice')
+        } else {
+          toast.error(response.message || 'Failed to generate voice')
+        }
       }
     } catch (error) {
       console.error('Voice generation error:', error)
-      toast.error(error.response?.data?.detail || 'Failed to generate voice')
+      
+      // Extract error details from response
+      const errorData = error.response?.data
+      if (errorData) {
+        if (errorData.error) {
+          setError(errorData.error)
+        } else if (errorData.detail) {
+          // If detail is a string, create error object
+          if (typeof errorData.detail === 'string') {
+            setError({
+              message: errorData.detail,
+              error_type: 'API_ERROR',
+              status_code: error.response?.status || 500,
+              details: errorData.detail
+            })
+          } else {
+            setError(errorData.detail)
+          }
+        }
+        toast.error(errorData.detail || errorData.message || 'Failed to generate voice')
+      } else {
+        setError({
+          message: error.message || 'Failed to generate voice',
+          error_type: 'NETWORK_ERROR',
+          status_code: 0,
+          details: error.message
+        })
+        toast.error(error.message || 'Failed to generate voice')
+      }
     } finally {
       setIsGenerating(false)
     }
@@ -74,6 +111,26 @@ const VoiceGenerator = ({ user, onGenerationComplete }) => {
   const canGenerate = user.plan === 'Trial' ? user.daily_count < 3 : true
   const isTrialUser = user.plan === 'Trial'
 
+  // Error type colors
+  const getErrorColor = (errorType) => {
+    switch (errorType) {
+      case 'API_KEY_ERROR':
+      case 'SERVICE_NOT_CONFIGURED':
+        return 'bg-red-50 border-red-200 text-red-800'
+      case 'PAYMENT_REQUIRED':
+        return 'bg-yellow-50 border-yellow-200 text-yellow-800'
+      case 'QUOTA_EXCEEDED':
+      case 'RATE_LIMIT_EXCEEDED':
+      case 'TOKEN_LIMIT_EXCEEDED':
+        return 'bg-orange-50 border-orange-200 text-orange-800'
+      case 'NETWORK_ERROR':
+      case 'TIMEOUT':
+        return 'bg-blue-50 border-blue-200 text-blue-800'
+      default:
+        return 'bg-red-50 border-red-200 text-red-800'
+    }
+  }
+
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <h2 className="text-2xl font-bold text-gray-900 mb-4">Generate Voice</h2>
@@ -92,6 +149,39 @@ const VoiceGenerator = ({ user, onGenerationComplete }) => {
             rows={4}
           />
         </div>
+
+        {/* Error Display */}
+        {error && (
+          <div className={`${getErrorColor(error.error_type)} border rounded-md p-4 relative`}>
+            <button
+              onClick={() => setError(null)}
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <div className="flex items-start space-x-3">
+              <AlertCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <h3 className="font-semibold mb-1">Error: {error.error_type || 'Unknown Error'}</h3>
+                <p className="text-sm mb-2">{error.message}</p>
+                {error.details && error.details !== error.message && (
+                  <div className="mt-2">
+                    <p className="text-xs font-medium mb-1">Details:</p>
+                    <pre className="text-xs bg-white bg-opacity-50 p-2 rounded overflow-auto max-h-40 whitespace-pre-wrap">
+                      {error.details}
+                    </pre>
+                  </div>
+                )}
+                {error.status_code && (
+                  <p className="text-xs mt-2 opacity-75">
+                    Status Code: {error.status_code}
+                    {error.timestamp && ` | Time: ${new Date(error.timestamp).toLocaleString()}`}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {isTrialUser && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
@@ -165,6 +255,9 @@ const VoiceGenerator = ({ user, onGenerationComplete }) => {
 }
 
 export default VoiceGenerator
+
+
+
 
 
 

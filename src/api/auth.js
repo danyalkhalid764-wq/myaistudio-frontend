@@ -37,14 +37,14 @@ api.interceptors.response.use(
       console.error('Attempted URL:', error.config?.url)
       console.error('Full URL:', `${API_BASE_URL}${error.config?.url}`)
     }
-    
+
     // Handle 401 Unauthorized - token expired or invalid
     if (error.response?.status === 401) {
       console.warn('Authentication failed - token may be expired')
       // Optionally clear token and redirect to login
       localStorage.removeItem('token')
     }
-    
+
     return Promise.reject(error)
   }
 )
@@ -62,12 +62,12 @@ export const authAPI = {
         email,
         password,
       })
-      
+
       // Store token in localStorage
       if (response.data.access_token) {
         localStorage.setItem('token', response.data.access_token)
       }
-      
+
       return response.data
     } catch (error) {
       console.error('Login API Error:', error)
@@ -126,6 +126,21 @@ export const authAPI = {
         console.error('Get Current User API Error:', error)
         console.error('Response:', error.response?.data)
       }
+      throw error
+    }
+  },
+
+  adminLogin: async (name, password) => {
+    try {
+      const response = await api.post('/auth/admin/login', {
+        name,
+        password,
+      })
+
+      // Simple response: { success: bool, message: string }
+      return response.data
+    } catch (error) {
+      console.error('Admin Login API Error:', error)
       throw error
     }
   },

@@ -9,6 +9,8 @@ import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import Pricing from './pages/Pricing'
 import VideoSlideshow from './pages/VideoSlideshow'
+import AdminLogin from './pages/AdminLogin'
+import AdminDashboard from './pages/AdminDashboard'
 import ProtectedRoute from './components/ProtectedRoute'
 import ApiConfigDisplay from './components/ApiConfigDisplay'
 
@@ -24,13 +26,22 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/slideshow" element={<VideoSlideshow />} />
-            <Route 
-              path="/dashboard" 
+            <Route
+              path="/dashboard"
               element={
                 <ProtectedRoute>
                   <Dashboard />
                 </ProtectedRoute>
-              } 
+              }
+            />
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route
+              path="/admin/dashboard"
+              element={
+                <ProtectedRoute>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
             />
           </Routes>
           <Toaster position="top-right" />

@@ -12,18 +12,21 @@
 const getApiUrl = () => {
   // Check if VITE_API_URL is set
   const envUrl = import.meta.env.VITE_API_URL;
-  
+
   // If set, use it
   if (envUrl) {
     return envUrl;
   }
-  
+
   // Fallback to localhost for local development
   return 'http://localhost:8000';
 };
 
 // Export the API base URL
 export const API_BASE_URL = getApiUrl();
+
+// Binance ID for subscription payments
+export const BINANCE_ID = import.meta.env.VITE_BINANCE_ID || "zjkA1hqrwJwAALTbaQZc40gbUBqTvDuXi1Jmq1aqDEMQIzjlfAJgWdLBID42nbzg";
 
 // Debug: Log the API URL in production
 if (import.meta.env.PROD) {
