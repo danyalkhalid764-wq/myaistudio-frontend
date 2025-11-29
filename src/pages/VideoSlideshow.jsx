@@ -1,4 +1,4 @@
- 
+
 import React, { useState } from 'react'
 import { generateSlideshow } from '../api/video'
 import { API_BASE_URL } from '../config/apiConfig'
@@ -24,27 +24,42 @@ export default function VideoSlideshow() {
     try {
       setLoading(true)
       const res = await generateSlideshow({ files, durationSeconds: duration, slideEffect, transition })
-      
-      // SIMPLE: Just use the video_url from response
+
+      console.log('📹 API Response:', res)
+      console.log('   video_url from API:', res.video_url)
+      console.log('   API_BASE_URL:', API_BASE_URL)
+
+      // Backend should return full URL in production, relative URL in local dev
       let videoUrlToUse = res.video_url
-      
+
       if (videoUrlToUse) {
         const isLocalDev = API_BASE_URL.includes('localhost:8000')
-        
-        // If it's a relative URL, prepend backend URL in production
+
+        // If backend returned a relative URL (local dev or fallback), prepend backend URL
         if (videoUrlToUse.startsWith('/static')) {
           if (!isLocalDev) {
+            // Production: prepend backend URL to relative path
             videoUrlToUse = `${API_BASE_URL}${videoUrlToUse}`
+            console.log('   Converted relative URL to full URL:', videoUrlToUse)
+          } else {
+            console.log('   Using relative URL (local dev):', videoUrlToUse)
           }
         }
-        // If it's not a full URL, prepend backend URL
+        // If it's not a full URL and not relative, prepend backend URL
         else if (!videoUrlToUse.startsWith('http://') && !videoUrlToUse.startsWith('https://')) {
           videoUrlToUse = `${API_BASE_URL}${videoUrlToUse}`
+          console.log('   Prefixed with API_BASE_URL:', videoUrlToUse)
+        } else {
+          console.log('   Using full URL from backend:', videoUrlToUse)
         }
       }
-      
+
+      // Add timestamp to prevent caching issues
+      const finalUrl = `${videoUrlToUse}?t=${Date.now()}`
+      console.log('🎬 Final video URL:', finalUrl)
+
       // Set video URL
-      setVideoUrl(`${videoUrlToUse}?t=${Date.now()}`)
+      setVideoUrl(finalUrl)
     } catch (err) {
       setError(err.message || 'Something went wrong')
     } finally {
@@ -124,10 +139,10 @@ export default function VideoSlideshow() {
       {videoUrl && (
         <div className="mt-6">
           <h2 className="text-xl font-semibold mb-2">Your Video</h2>
-          <video 
-            key={videoUrl} 
-            src={videoUrl} 
-            controls 
+          <video
+            key={videoUrl}
+            src={videoUrl}
+            controls
             className="w-full rounded shadow"
             preload="metadata"
             crossOrigin="anonymous"
